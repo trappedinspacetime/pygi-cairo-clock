@@ -153,7 +153,7 @@ def onTimeout (widget):
 
 
 def main():
-    win = Gtk.Window()
+    win = Gtk.Window(title="Hayriye Saati")
     #win.add_events(Gdk.EventMask.BUTTON_PRESS_MASK)
     #win.connect('button-press-event', buttonpress)
      # Make the window draggable
