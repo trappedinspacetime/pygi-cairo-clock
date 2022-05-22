@@ -9,8 +9,9 @@ import cairo
 import gi
 gi.require_version("Gtk", "3.0")
 from gi.repository import Gtk, Gdk, GLib 
-FPS = 24
+FPS = 4
 
+# taken from https://github.com/s-zeid/bin/blob/main/display-transparent
 def _drag_callback(window, event):
  """Called when the window is clicked on."""
  window.begin_move_drag(
