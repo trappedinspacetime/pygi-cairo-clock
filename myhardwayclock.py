@@ -9,6 +9,7 @@ import cairo
 import gi
 gi.require_version("Gtk", "3.0")
 from gi.repository import Gtk, Gdk, GLib 
+import signal
 FPS = 4
 
 # drag method taken from https://github.com/s-zeid/bin/blob/main/display-transparent
@@ -151,31 +152,77 @@ def draw(da, ctx):
 def onTimeout (widget):
     widget.queue_draw ()
     return True
+    
+def on_close(window, event):
+    save_position(window)
+    Gtk.main_quit()
 
+def on_sigterm(signum, frame):
+    save_position(window)
+    Gtk.main_quit()
+    
+def on_sigint(signum, frame):
+    save_position(window)
+    Gtk.main_quit()
+
+def save_position(window):
+    print("saving")
+    pos_x, pos_y = window.get_position()
+    with open("config.ini", "w") as f:
+        f.write(f"pos_x={pos_x}\n")
+        f.write(f"pos_y={pos_y}\n")
+
+def load_position(window):
+    try:
+        with open("config.ini", "r") as f:
+            for line in f:
+                key, value = line.strip().split("=")
+                if key == "pos_x":
+                    pos_x = int(value)
+                elif key == "pos_y":
+                    pos_y = int(value)
+            window.move(pos_x, pos_y)
+    except FileNotFoundError:
+        pass
 
 def main():
     win = Gtk.Window(title="Hayriye Saati")
+    load_position(win) 
     #win.add_events(Gdk.EventMask.BUTTON_PRESS_MASK)
     #win.connect('button-press-event', buttonpress)
      # Make the window draggable
+    #win.connect("delete-event", on_close)
+    win.connect("delete-event", on_close)
+    #win.connect("destroy", lambda w: on_sigterm)
+    #win.connect("destroy", lambda w: save_position(win))
+    win.connect('destroy', lambda w: Gtk.main_quit())
+    
     screen = win.get_screen()
     rgba = screen.get_rgba_visual()
     win.set_visual(rgba)
     win.connect("button-press-event", _drag_callback)
     win.add_events(Gdk.EventMask.BUTTON_PRESS_MASK)
-    #win.set_type_hint (Gdk.WindowTypeHint.DOCK)
-    win.connect('destroy', lambda w: Gtk.main_quit())
+    win.set_type_hint (Gdk.WindowTypeHint.DOCK)
+    #win.connect('destroy', lambda w: Gtk.main_quit())
     win.set_default_size(200, 200)
     win.set_app_paintable (True)
     win.set_decorated (False)
     win.set_skip_taskbar_hint (True)
+    win.set_keep_below(True)    
     drawingarea = Gtk.DrawingArea()
     win.add(drawingarea)
     drawingarea.connect('draw', draw)
     timeoutId = GLib.timeout_add (1000 / FPS, onTimeout, win)
+    #signal.signal(signal.SIGTERM, on_sigterm)
     win.show_all()
+    print("show")
+    signal.signal(signal.SIGTERM, on_sigterm)
+    #signal.signal(signal.SIGINT, on_sigint)
+    signal.signal(signal.SIGINT, on_sigterm)
+    print("exiting")
     Gtk.main()
 
 
 if __name__ == '__main__':
     main()
+
